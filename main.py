@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """People Counter."""
 """
  Copyright (c) 2018 Intel Corporation.
