@@ -39,6 +39,18 @@ IPADDRESS = socket.gethostbyname(HOSTNAME)
 MQTT_HOST = IPADDRESS
 MQTT_PORT = 3001
 MQTT_KEEPALIVE_INTERVAL = 60
+################# TODO: separte variables in .env file?
+USE_MQTT=False  # To be able to test without MQTT
+DEFAULT_CONFIDENCE=0.5
+
+DEFAULT_DEVICE="MYRIAD" #CPU
+if DEFAULT_DEVICE == "CPU":
+    DEFAULT_PREC = 32
+else:
+    DEFAULT_PREC=16
+
+DEFAULT_MODEL=f"./models/intel/person-detection-retail-0013/FP{DEFAULT_PREC}/person-detection-retail-0013.xml"
+DEFAULT_INPUT='resources/Pedestrian_Detect_2_1_1.mp4'
 
 
 def build_argparser():
@@ -48,16 +60,16 @@ def build_argparser():
     :return: command line arguments
     """
     parser = ArgumentParser()
-    parser.add_argument("-m", "--model", required=True, type=str,
+    parser.add_argument("-m", "--model", required=False, type=str, default=DEFAULT_MODEL, 
                         help="Path to an xml file with a trained model.")
-    parser.add_argument("-i", "--input", required=True, type=str,
+    parser.add_argument("-i", "--input", required=False, type=str, default=DEFAULT_INPUT,
                         help="Path to image or video file")
     parser.add_argument("-l", "--cpu_extension", required=False, type=str,
                         default=None,
                         help="MKLDNN (CPU)-targeted custom layers."
                              "Absolute path to a shared library with the"
                              "kernels impl.")
-    parser.add_argument("-d", "--device", type=str, default="CPU",
+    parser.add_argument("-d", "--device", type=str, default=DEFAULT_DEVICE,
                         help="Specify the target device to infer on: "
                              "CPU, GPU, FPGA or MYRIAD is acceptable. Sample "
                              "will look for a suitable plugin for device "
@@ -65,6 +77,12 @@ def build_argparser():
     parser.add_argument("-pt", "--prob_threshold", type=float, default=0.5,
                         help="Probability threshold for detections filtering"
                         "(0.5 by default)")
+    parser.add_argument("-o", "--disable_video_output", type=bool, default=True, #False,
+                        help="Disable the output of key video frames to stdout\n"
+                            "If enabled, you need to pipe the output of this script to ffmpeg\n"
+                            f"e.g.: python3 {__file__} | ffmpeg -v warning -f rawvideo -pixel_format bgr24 -video_size 1280x720 -framerate 24 -i - http://0.0.0.0:3004/fac.ffm")
+    parser.add_argument("-q", "--disable_mqtt", type=bool, default=False,
+                        help="Disable the connection to MQTT server (for example, to test the inference only)")
     return parser
 
 
@@ -116,6 +134,16 @@ def infer_on_stream(args, client):
 
         ### TODO: Write an output image if `single_image_mode` ###
 
+def sanitize_input(args):
+    if args.input == "CAM" or args.input == "0":
+        args.input = 0 #the webcam
+    else:
+        args.input = os.path.abspath(args.input)
+
+    if args.input.endswith('.jpg') or args.input.endswith('.bmp'):
+        args.isImage = True
+    else:
+        args.isImage = False
 
 def main():
     """
@@ -125,6 +153,7 @@ def main():
     """
     # Grab command line args
     args = build_argparser().parse_args()
+    sanitize_input(args)
     # Connect to the MQTT server
     client = connect_mqtt()
     # Perform inference on the input stream
