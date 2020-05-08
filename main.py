@@ -88,13 +88,17 @@ def build_argparser():
 
 
 def connect_mqtt():
-    ### TODO: Connect to the MQTT client ###
-    client = None
+    if USE_MQTT:
+        client = mqtt.Client()
+        client.connect(MQTT_HOST, MQTT_PORT, MQTT_KEEPALIVE_INTERVAL)
+        return client
 
-    return client
+def disconnect_mqtt(client):
+    if USE_MQTT:
+        client.disconnect()
 
 
-def infer_on_stream(args, client):
+def infer_on_stream(args, mqtt_client):
     """
     Initialize the inference network, stream video to network,
     and output stats and video.
@@ -155,10 +159,13 @@ def main():
     # Grab command line args
     args = build_argparser().parse_args()
     sanitize_input(args)
+    
     # Connect to the MQTT server
-    client = connect_mqtt()
+    USE_MQTT = not args.disable_mqtt
+    mqtt_client = connect_mqtt()
     # Perform inference on the input stream
-    infer_on_stream(args, client)
+    infer_on_stream(args, mqtt_client)
+    disconnect_mqtt(mqtt_client)
 
 
 if __name__ == '__main__':
