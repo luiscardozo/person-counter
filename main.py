@@ -84,6 +84,8 @@ def build_argparser():
                             f"e.g.: python3 {__file__} | ffmpeg -v warning -f rawvideo -pixel_format bgr24 -video_size 1280x720 -framerate 24 -i - http://0.0.0.0:3004/fac.ffm")
     parser.add_argument("-q", "--disable_mqtt", type=bool, default=False,
                         help="Disable the connection to MQTT server (for example, to test the inference only)")
+    parser.add_argument("-s", "--show_window", type=bool, default=True,
+                        help="Shows a Window with the processed output of the image or video")
     return parser
 
 
@@ -96,6 +98,35 @@ def connect_mqtt():
 def disconnect_mqtt(client):
     if USE_MQTT:
         client.disconnect()
+
+def draw_masks(result, frame, v_width, v_height):
+    '''
+    Draw bounding boxes onto the frame.
+    '''
+    nr_people_on_frame = 0
+    valid_boxes = []
+    for box in result[0][0]: # Output shape is 1x1x200x7
+        confidence = box[2]
+        if confidence >= DEFAULT_CONFIDENCE: #prob_threshold
+            xmin = int(box[3] * v_width)
+            ymin = int(box[4] * v_height)
+            xmax = int(box[5] * v_width)
+            ymax = int(box[6] * v_height)
+            cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 1)
+            nr_people_on_frame += 1
+            valid_boxes.append(box)
+    return frame, nr_people_on_frame, valid_boxes
+
+def preprocess_frame(raw_frame, required_size):
+    """
+    Preprocess the frame according to the model needs.
+    """
+    frame = cv2.resize(raw_frame, required_size)
+    #cv2.cvtColor if not BGR
+    frame = frame.transpose((2,0,1))        #depends on the model
+    frame = frame.reshape(1, *frame.shape)  #depends on the model
+    return frame
+
 
 
 def infer_on_stream(args, mqtt_client):
@@ -112,32 +143,119 @@ def infer_on_stream(args, mqtt_client):
     # Set Probability threshold for detections
     prob_threshold = args.prob_threshold
 
-    ### TODO: Load the model through `infer_network` ###
+    ### Load the model through `infer_network` ###
+    network = infer_network.load_model(args.model, args.device, args.cpu_extension)
+    net_input_shape = infer_network.get_input_shape()
+    required_size = (net_input_shape[3], net_input_shape[2])
 
-    ### TODO: Handle the input stream ###
+    ### Handle the input stream ###
+    cap = cv2.VideoCapture(args.input) #, cv2.CAP_FFMPEG)
+    cap.open(args.input)
 
-    ### TODO: Loop until stream is over ###
+    v_width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    v_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-        ### TODO: Read from the video capture ###
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) #OpenCV 3+
+    print(f"Total frames: {total_frames}")
 
-        ### TODO: Pre-process the image as needed ###
+    if args.isImage:
+        out = None
+    else:
+        print("Creating VideoWriter")
+        fourCC = cv2.VideoWriter_fourcc(*'MP4V') #try with: 'MJPG', 'XVID', 'MP4V'
+        out = cv2.VideoWriter('out.mp4', fourCC, 30, (v_width, v_height))
 
-        ### TODO: Start asynchronous inference for specified request ###
+    ### Loop until stream is over ###
+    frame_nr=0
+    total_people_counted = 0
+    previous_nr_people_on_frame = 0
+    duration = 0
+    duration_start = 0
+    duration_end = 0
 
-        ### TODO: Wait for the result ###
+    while cap.isOpened:
+        frame_nr += 1
 
-            ### TODO: Get the results of the inference request ###
+        #print(f"Frame {frame_nr} of {total_frames}")
 
-            ### TODO: Extract any desired stats from the results ###
+        ### Read from the video capture ###
+        flag, raw_frame = cap.read()
+        if not flag:
+            break
 
-            ### TODO: Calculate and send relevant information on ###
+        # skip frames (to help debug). Frame 62: the girl starts walking, frame 190: undetected and then redetected
+        #if frame_nr < 150:
+        #    continue
+
+        key_pressed = cv2.waitKey(30)
+
+        ### Pre-process the image as needed ###
+        frame = preprocess_frame(raw_frame, required_size)
+        
+        ### Start asynchronous inference for specified request ###
+        infer_network.exec_net(frame)
+
+        ### Wait for the result ###
+        if infer_network.wait() == 0:
+
+            ### Get the results of the inference request ###
+            result = infer_network.get_output() #[1,1,200,7]
+
+            ### Extract any desired stats from the results ###
+            out_frame, nr_people_on_frame, valid_boxes = draw_masks(result, raw_frame, v_width, v_height)
+
+            #if nr_people_on_frame is equal, update the duration (needs to be per-person)
+            #else, there is someone new or someone less
+            if previous_nr_people_on_frame == nr_people_on_frame:
+                duration_end = time.perf_counter()
+            else:
+                if previous_nr_people_on_frame < nr_people_on_frame:
+                    #new people on frame
+                    #=== TODO: check if it was an error and reappears on next frame
+                    total_people_counted += nr_people_on_frame - previous_nr_people_on_frame
+                    duration_start = time.perf_counter()
+                else:
+                    #less people on frame
+                    duration_end = time.perf_counter()
+
+            previous_nr_people_on_frame = nr_people_on_frame
+
+            person_stats = {'count': nr_people_on_frame, 'total': total_people_counted}
+
+            duration = duration_end - duration_start if duration_end > duration_start else 0
+            print(f"frame: {frame_nr} ###### count: {nr_people_on_frame}, total: {total_people_counted}, duration: {duration}")
+
+            ### Calculate and send relevant information on ###
             ### current_count, total_count and duration to the MQTT server ###
             ### Topic "person": keys of "count" and "total" ###
             ### Topic "person/duration": key of "duration" ###
+            if USE_MQTT:
+                mqtt_client.publish("person", json.dumps(person_stats))
+                mqtt_client.publish("person/duration", json.dumps({'duration':duration}))
 
-        ### TODO: Send the frame to the FFMPEG server ###
+        ### Send the frame to the FFMPEG server ###
+        if not args.disable_video_output:
+            sys.stdout.buffer.write(out_frame)
+            sys.stdout.flush()
 
-        ### TODO: Write an output image if `single_image_mode` ###
+        ### Write an output image if `single_image_mode` ###
+        if args.isImage:
+            cv2.imwrite('output_image.jpg', out_frame)
+        else:
+            #print(f"Writing frame {actual_frame}")
+            out.write(out_frame)
+
+        if args.show_window:
+            cv2.imshow('display', out_frame)
+
+        if key_pressed == 27:
+            break #exit the while cap.isOpened() loop
+
+    if not args.isImage:
+        out.release()
+
+    cap.release()
+    cv2.destroyAllWindows()
 
 def sanitize_input(args):
     if args.input == "CAM" or args.input == "0":
@@ -159,7 +277,7 @@ def main():
     # Grab command line args
     args = build_argparser().parse_args()
     sanitize_input(args)
-    
+
     # Connect to the MQTT server
     USE_MQTT = not args.disable_mqtt
     mqtt_client = connect_mqtt()
