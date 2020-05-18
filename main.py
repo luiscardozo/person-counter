@@ -42,7 +42,7 @@ MQTT_PORT = 3001
 MQTT_KEEPALIVE_INTERVAL = 60
 ################# TODO: separte variables in .env file?
 USE_MQTT=False  # To be able to test without MQTT
-DEFAULT_CONFIDENCE=0.5
+DEFAULT_CONFIDENCE=0.38
 
 DEFAULT_DEVICE="MYRIAD" #CPU
 if DEFAULT_DEVICE == "CPU":
@@ -50,7 +50,26 @@ if DEFAULT_DEVICE == "CPU":
 else:
     DEFAULT_PREC=16
 
-DEFAULT_MODEL=f"./models/intel/person-detection-retail-0013/FP{DEFAULT_PREC}/person-detection-retail-0013.xml"
+#DEFAULT_MODEL=f"./models/intel/person-detection-retail-0013/FP{DEFAULT_PREC}/person-detection-retail-0013.xml"
+DEFAULT_MODEL="./tmp/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.xml" #Muchos errores
+#DEFAULT_MODEL="./tmp/faster_rcnn_resnet50_coco_2018_01_28/frozen_inference_graph.xml"
+#DEFAULT_MODEL="./tmp/faster_rcnn_resnet101_ava_v2.1_2018_04_30/frozen_inference_graph.xml" # input_shape = [1, 3]
+#DEFAULT_MODEL="./tmp/onnx-mobilenetv2-1.0/mobilenetv2-1.0.xml" # sólo para clasificación
+#DEFAULT_MODEL="tmp/faster_rcnn_resnet101_kitti_2018_01_28/frozen_inference_graph.xml" #Input shape
+
+#DEFAULT_MODEL="tmp/faster_rcnn_inception_v2_coco_2018_01_28/frozen_inference_graph.xml" ## Input (1,3)
+
+#https://github.com/zlingkang/mobilenet_ssd_pedestrian_detection
+#DEFAULT_MODEL="tmp/mobilenet_ssd_pedestrian_detection/MobileNetSSD_deploy10695.xml"
+
+#https://github.com/onnx/models/tree/master/vision/object_detection_segmentation/ssd
+#DEFAULT_MODEL="tmp/onnx/ssd-10.xml"
+
+#https://github.com/weiliu89/caffe/tree/ssd
+#https://drive.google.com/file/d/0BzKzrI_SkD1_WnR2T1BGVWlCZHM/view
+#DEFAULT_MODEL="tmp/caffe/vggnet/VGG_VOC0712Plus_SSD_300x300_iter_240000.xml"
+## También funciona, pero muy lento
+
 DEFAULT_INPUT='resources/Pedestrian_Detect_2_1_1.mp4'
 
 
@@ -106,6 +125,10 @@ def draw_masks(result, frame, v_width, v_height):
     nr_people_on_frame = 0
     valid_boxes = []
     for box in result[0][0]: # Output shape is 1x1x200x7
+        label = box[1]
+        if label != 1:  # Person Class in COCO
+            continue
+
         confidence = box[2]
         if confidence >= DEFAULT_CONFIDENCE: #prob_threshold
             xmin = int(box[3] * v_width)
