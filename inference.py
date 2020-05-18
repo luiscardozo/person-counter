@@ -35,30 +35,37 @@ class Network:
     """
 
     def __init__(self):
-        self._plugin = None
         self._network = None
         self._exec_network = None
-        self._input_blob = None
-        self._output_blob = None
+        self._input_blob_name = None
+        self._output_blob_name = None
 
     def load_model(self, model, device, cpu_extension=None):
-        ### TODO: Load the model ###
+        ### Load the model ###
         model_xml = model
         model_bin = os.path.splitext(model_xml)[0] + ".bin"
 
-        self._plugin = IECore()
+        core = IECore()
 
-        ### TODO: Check for supported layers ###   ######## HACER: cómo?
-        ############======================>>>>>> check for supported layers o usar CPU ext
-
-        ### TODO: Add any necessary extensions ###
+        ### Add any necessary extensions ###
         if cpu_extension and "CPU" in device:
-            self._plugin.add_extension(cpu_extension, device)
+            core.add_extension(cpu_extension, device)
 
+        ### Check for supported layers ###
         ### TODO: Return the loaded inference plugin ###
         self._network = IENetwork(model=model_xml, weights=model_bin)
-        self._exec_network = self._plugin.load_network(self._network, device)
-
+        try:
+            self._exec_network = core.load_network(self._network, device)
+        except Exception as e:
+            if "unsupported layer" in str(e):
+                # OpenVINO throws a RuntimeException on unsupported layer,
+                # not an specific type of exception
+                print("Cannot run the model, unsupported layer: ", e)
+                print("You can try to pass a CPU Extension with the argument --cpu_extension")
+            else:
+                print(e)
+            exit(1)
+        
         self._input_blob = next(iter(self._network.inputs))
         self._output_blob = next(iter(self._network.outputs))
         ### Note: You may need to update the function parameters. ###
