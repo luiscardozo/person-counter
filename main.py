@@ -124,6 +124,20 @@ def draw_masks(result, frame, v_width, v_height):
     '''
     nr_people_on_frame = 0
     valid_boxes = []
+    #print("Result: ", result)
+    #print("shape: ", result.shape)
+
+    def check_boundary(x, y, maxX=v_width):
+        newX = x
+        newY = y
+
+        if y < 20:
+            newY = 20
+        if x > maxX - 50:
+            newX = maxX - 50
+        
+        return newX, newY
+    
     for box in result[0][0]: # Output shape is 1x1x200x7
         label = box[1]
         if label != 1:  # Person Class in COCO
@@ -135,7 +149,8 @@ def draw_masks(result, frame, v_width, v_height):
             ymin = int(box[4] * v_height)
             xmax = int(box[5] * v_width)
             ymax = int(box[6] * v_height)
-            cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 1)
+            cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (255, 0, 0), 2)
+            cv2.putText(frame, f"{confidence:.4f}",check_boundary(xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255,0,0), thickness=2)
             nr_people_on_frame += 1
             valid_boxes.append(box)
     return frame, nr_people_on_frame, valid_boxes
@@ -149,8 +164,6 @@ def preprocess_frame(raw_frame, required_size):
     frame = frame.transpose((2,0,1))        #depends on the model
     frame = frame.reshape(1, *frame.shape)  #depends on the model
     return frame
-
-
 
 def infer_on_stream(args, mqtt_client):
     """
