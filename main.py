@@ -203,6 +203,29 @@ def preprocess_frame(raw_frame, required_size):
     frame = frame.reshape(1, *frame.shape)  #depends on the model
     return frame
 
+def open_video(path):
+    """
+    Open the video in _path_
+    Return OpenCV CaptureObject
+    """
+    cap = cv2.VideoCapture(path)
+    cap.open(path)
+    return cap
+
+def get_video_info(cap):
+    """
+    Returns informations of the video: (width, height, fps, total_frames)
+    """
+    width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) #OpenCV 3+
+
+    print(f"Total frames: {total_frames}. {width}x{height}@{fps}FPS")
+    
+    return (width, height, fps, total_frames)
+
+
 def infer_on_stream(args, mqtt_client):
     """
     Initialize the inference network, stream video to network,
@@ -223,16 +246,10 @@ def infer_on_stream(args, mqtt_client):
     required_size = (net_input_shape[3], net_input_shape[2])
 
     ### Handle the input stream ###
-    cap = cv2.VideoCapture(args.input) #, cv2.CAP_FFMPEG)
-    cap.open(args.input)
+    cap = open_video(args.input)
 
-    v_width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    v_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    v_width, v_height, fps, total_frames = get_video_info(cap)
     
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) #OpenCV 3+
-    print(f"Total frames: {total_frames}. FPS: {fps}")
-
     if args.isImage:
         out = None
     else:
