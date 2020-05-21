@@ -2,3 +2,6 @@ env/
 __pycache__/
 out.mp4
 .vscode/
+out/
+old/
+tmp/
