@@ -158,6 +158,33 @@ def draw_masks(result, frame, v_width, v_height, prob_threshold):
             valid_boxes.append(box)
     return frame, nr_people_on_frame, valid_boxes
 
+def draw_stats(frame, nr_people, total_people, duration, frame_nr):
+    '''
+    Draw statistics onto the frame.
+    '''
+
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 0.5
+    color = (0, 0, 255)
+    thickness = 1
+    x = 10
+    y = 15
+
+    def putText(text):
+        nonlocal frame
+        nonlocal y
+        cv2.putText(frame, text, (x, y), font, font_scale, color, thickness=thickness)
+        y += 20
+
+    if frame_nr != 0:
+        putText(f"Frame: {frame_nr}")
+
+    putText(f"In Frame: {nr_people}")
+    putText(f"Duration: {duration:.2f}s")
+    putText(f"Total: {total_people}")
+    
+    return frame
+
 def preprocess_frame(raw_frame, required_size):
     """
     Preprocess the frame according to the model needs.
@@ -262,6 +289,8 @@ def infer_on_stream(args, mqtt_client):
 
             duration = duration_end - duration_start if duration_end > duration_start else 0
             print(f"frame: {frame_nr} ###### count: {nr_people_on_frame}, total: {total_people_counted}, duration: {duration}")
+            
+            out_frame = draw_stats(out_frame, nr_people_on_frame, total_people_counted, duration, frame_nr)
 
             ### Calculate and send relevant information on ###
             ### current_count, total_count and duration to the MQTT server ###
