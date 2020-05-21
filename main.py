@@ -96,6 +96,8 @@ def build_argparser():
     parser.add_argument("-pt", "--prob_threshold", type=float, default=0.5,
                         help="Probability threshold for detections filtering"
                         "(0.5 by default)")
+    parser.add_argument("-o", "--output_video", type=str, default="out.mp4",
+                        help="Name of the output video")
     parser.add_argument("-x", "--disable_video_output", type=bool, default=False,
                         help="Disable the output of key video frames to stdout\n"
                             "If enabled, you need to pipe the output of this script to ffmpeg\n"
@@ -198,7 +200,7 @@ def infer_on_stream(args, mqtt_client):
     else:
         print("Creating VideoWriter")
         fourCC = cv2.VideoWriter_fourcc(*'MP4V') #try with: 'MJPG', 'XVID', 'MP4V'
-        out = cv2.VideoWriter('out.mp4', fourCC, 30, (v_width, v_height))
+        out = cv2.VideoWriter(args.output_video, fourCC, 30, (v_width, v_height))
 
     ### Loop until stream is over ###
     frame_nr=0
