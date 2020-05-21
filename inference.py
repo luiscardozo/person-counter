@@ -69,10 +69,10 @@ class Network:
             if "unsupported layer" in str(e):
                 # OpenVINO throws a RuntimeException on unsupported layer,
                 # not an specific type of exception
-                print("Cannot run the model, unsupported layer: ", e)
-                print("You can try to pass a CPU Extension with the argument --cpu_extension")
+                print("Cannot run the model, unsupported layer: ", e, file=sys.stderr)
+                print("You can try to pass a CPU Extension with the argument --cpu_extension", file=sys.stderr)
             else:
-                print(e)
+                print(e, file=sys.stderr)
             exit(1)
         
         self._input_blob = next(iter(self._network.inputs))

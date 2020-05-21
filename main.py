@@ -135,9 +135,7 @@ def draw_masks(result, frame, v_width, v_height, prob_threshold):
     '''
     nr_people_on_frame = 0
     valid_boxes = []
-    #print("Result: ", result)
-    #print("shape: ", result.shape)
-
+    
     def check_boundary(x, y, maxX=v_width):
         newX = x
         newY = y
@@ -221,7 +219,7 @@ def get_video_info(cap):
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) #OpenCV 3+
 
-    print(f"Total frames: {total_frames}. {width}x{height}@{fps}FPS")
+    log.debug(f"Total frames: {total_frames}. {width}x{height}@{fps}FPS")
     
     return (width, height, fps, total_frames)
 
@@ -253,7 +251,7 @@ def infer_on_stream(args, mqtt_client):
     if args.isImage:
         out = None
     else:
-        print("Creating VideoWriter")
+        log.debug("Creating VideoWriter")
         fourCC = cv2.VideoWriter_fourcc(*'mp4v') #try with: 'MJPG', 'XVID', 'MP4V'
         out = cv2.VideoWriter(args.output_video, fourCC, fps, (v_width, v_height))
 
@@ -267,8 +265,6 @@ def infer_on_stream(args, mqtt_client):
 
     while cap.isOpened:
         frame_nr += 1
-
-        #print(f"Frame {frame_nr} of {total_frames}")
 
         ### Read from the video capture ###
         flag, raw_frame = cap.read()
@@ -315,7 +311,7 @@ def infer_on_stream(args, mqtt_client):
             person_stats = {'count': nr_people_on_frame, 'total': total_people_counted}
 
             duration = duration_end - duration_start if duration_start != 0 else 0
-            print(f"frame: {frame_nr} ###### count: {nr_people_on_frame}, total: {total_people_counted}, duration: {duration}")
+            log.debug(f"frame: {frame_nr} ###### count: {nr_people_on_frame}, total: {total_people_counted}, duration: {duration}")
             
             out_frame = draw_stats(out_frame, nr_people_on_frame, total_people_counted, duration, frame_nr)
 
@@ -336,7 +332,6 @@ def infer_on_stream(args, mqtt_client):
         if args.isImage:
             cv2.imwrite('output_image.jpg', out_frame)
         else:
-            #print(f"Writing frame {actual_frame}")
             out.write(out_frame)
 
         if args.show_window:
