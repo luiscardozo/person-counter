@@ -106,6 +106,8 @@ def build_argparser():
                         help="Disable the connection to MQTT server (for example, to test the inference only)")
     parser.add_argument("-s", "--show_window", type=bool, default=True,
                         help="Shows a Window with the processed output of the image or video")
+    parser.add_argument("-k", "--skip_frames", type=int, default=0,
+                        help="Skip # of frames on the start of the video.")
     return parser
 
 
@@ -222,8 +224,8 @@ def infer_on_stream(args, mqtt_client):
             break
 
         # skip frames (to help debug). Frame 62: the girl starts walking, frame 190: undetected and then redetected
-        #if frame_nr < 150:
-        #    continue
+        if args.skip_frames != 0 and frame_nr < args.skip_frames:
+            continue
 
         key_pressed = cv2.waitKey(30)
 
