@@ -272,7 +272,8 @@ def infer_on_stream(args, mqtt_client):
             #if nr_people_on_frame is equal, update the duration (needs to be per-person)
             #else, there is someone new or someone less
             if previous_nr_people_on_frame == nr_people_on_frame:
-                duration_end = time.perf_counter()
+                if duration_start != 0:
+                    duration_end = time.perf_counter()
             else:
                 if previous_nr_people_on_frame < nr_people_on_frame:
                     #new people on frame
@@ -282,12 +283,13 @@ def infer_on_stream(args, mqtt_client):
                 else:
                     #less people on frame
                     duration_end = time.perf_counter()
+                    duration_start = 0
 
             previous_nr_people_on_frame = nr_people_on_frame
 
             person_stats = {'count': nr_people_on_frame, 'total': total_people_counted}
 
-            duration = duration_end - duration_start if duration_end > duration_start else 0
+            duration = duration_end - duration_start if duration_start != 0 else 0
             print(f"frame: {frame_nr} ###### count: {nr_people_on_frame}, total: {total_people_counted}, duration: {duration}")
             
             out_frame = draw_stats(out_frame, nr_people_on_frame, total_people_counted, duration, frame_nr)
