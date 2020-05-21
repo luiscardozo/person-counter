@@ -143,8 +143,8 @@ def draw_masks(result, frame, v_width, v_height, prob_threshold):
     
     for box in result[0][0]: # Output shape is 1x1x200x7
         label = box[1]
-        if label != 1:  # Person Class in COCO
-            continue
+        #if label != 1:  # Person Class in COCO
+        #    continue
 
         confidence = box[2]
         if confidence >= prob_threshold:
