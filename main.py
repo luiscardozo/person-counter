@@ -108,6 +108,9 @@ def build_argparser():
                         help="Shows a Window with the processed output of the image or video")
     parser.add_argument("-k", "--skip_frames", type=int, default=0,
                         help="Skip # of frames on the start of the video.")
+    parser.add_argument("--dev", required=False, action="store_true",
+                        help="Set options to ease the development.\n"
+                        "Same as using -x -s -k 58 -q")
     return parser
 
 
@@ -340,6 +343,12 @@ def sanitize_input(args):
         args.isImage = True
     else:
         args.isImage = False
+
+    if args.dev:
+        args.disable_video_output = True
+        args.show_window = True
+        args.skip_frames = 58
+        args.disable_mqtt = True
 
 def main():
     """
