@@ -42,7 +42,7 @@ MQTT_PORT = 3001
 MQTT_KEEPALIVE_INTERVAL = 60
 ################# TODO: separte variables in .env file?
 USE_MQTT=False  # To be able to test without MQTT
-DEFAULT_CONFIDENCE=0.38
+DEFAULT_CONFIDENCE=0.5
 
 DEFAULT_DEVICE="MYRIAD" #CPU
 if DEFAULT_DEVICE == "CPU":
@@ -93,7 +93,7 @@ def build_argparser():
                              "CPU, GPU, FPGA or MYRIAD is acceptable. Sample "
                              "will look for a suitable plugin for device "
                              "specified (CPU by default)")
-    parser.add_argument("-pt", "--prob_threshold", type=float, default=0.5,
+    parser.add_argument("-pt", "--prob_threshold", type=float, default=DEFAULT_CONFIDENCE,
                         help="Probability threshold for detections filtering"
                         "(0.5 by default)")
     parser.add_argument("-o", "--output_video", type=str, default="out.mp4",
@@ -121,7 +121,7 @@ def disconnect_mqtt(client):
     if USE_MQTT:
         client.disconnect()
 
-def draw_masks(result, frame, v_width, v_height):
+def draw_masks(result, frame, v_width, v_height, prob_threshold):
     '''
     Draw bounding boxes onto the frame.
     '''
@@ -147,7 +147,7 @@ def draw_masks(result, frame, v_width, v_height):
             continue
 
         confidence = box[2]
-        if confidence >= DEFAULT_CONFIDENCE: #prob_threshold
+        if confidence >= prob_threshold:
             xmin = int(box[3] * v_width)
             ymin = int(box[4] * v_height)
             xmax = int(box[5] * v_width)
@@ -180,7 +180,7 @@ def infer_on_stream(args, mqtt_client):
     # Initialise the class
     infer_network = Network()
     # Set Probability threshold for detections
-    prob_threshold = args.prob_threshold
+    # --> it's in args.prob_threshold
 
     ### Load the model through `infer_network` ###
     network = infer_network.load_model(args.model, args.device, args.cpu_extension)
@@ -240,7 +240,7 @@ def infer_on_stream(args, mqtt_client):
             result = infer_network.get_output() #[1,1,200,7]
 
             ### Extract any desired stats from the results ###
-            out_frame, nr_people_on_frame, valid_boxes = draw_masks(result, raw_frame, v_width, v_height)
+            out_frame, nr_people_on_frame, valid_boxes = draw_masks(result, raw_frame, v_width, v_height, args.prob_threshold)
 
             #if nr_people_on_frame is equal, update the duration (needs to be per-person)
             #else, there is someone new or someone less
