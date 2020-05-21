@@ -98,7 +98,7 @@ def build_argparser():
                         "(0.5 by default)")
     parser.add_argument("-o", "--output_video", type=str, default="out.mp4",
                         help="Name of the output video")
-    parser.add_argument("-x", "--disable_video_output", type=bool, default=False,
+    parser.add_argument("-x", "--disable_video_output", required=False, action="store_true",
                         help="Disable the output of key video frames to stdout\n"
                             "If enabled, you need to pipe the output of this script to ffmpeg\n"
                             f"e.g.: python3 {__file__} | ffmpeg -v warning -f rawvideo -pixel_format bgr24 -video_size 1280x720 -framerate 24 -i - http://0.0.0.0:3004/fac.ffm")
