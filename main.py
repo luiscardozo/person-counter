@@ -199,7 +199,7 @@ def infer_on_stream(args, mqtt_client):
         out = None
     else:
         print("Creating VideoWriter")
-        fourCC = cv2.VideoWriter_fourcc(*'MP4V') #try with: 'MJPG', 'XVID', 'MP4V'
+        fourCC = cv2.VideoWriter_fourcc(*'mp4v') #try with: 'MJPG', 'XVID', 'MP4V'
         out = cv2.VideoWriter(args.output_video, fourCC, 30, (v_width, v_height))
 
     ### Loop until stream is over ###
