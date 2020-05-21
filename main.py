@@ -227,8 +227,6 @@ def infer_on_stream(args, mqtt_client):
         if args.skip_frames != 0 and frame_nr < args.skip_frames:
             continue
 
-        key_pressed = cv2.waitKey(30)
-
         ### Pre-process the image as needed ###
         frame = preprocess_frame(raw_frame, required_size)
         
@@ -288,8 +286,12 @@ def infer_on_stream(args, mqtt_client):
         if args.show_window:
             cv2.imshow('display', out_frame)
 
-        if key_pressed == 27:
+        key_pressed = cv2.waitKey(30)
+        if key_pressed == 27 or key_pressed == 113: #Esc or q
             break #exit the while cap.isOpened() loop
+
+        if key_pressed == 32: #if space: advance 20 frames
+            args.skip_frames = frame_nr + 20
 
     if not args.isImage:
         out.release()
