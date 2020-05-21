@@ -35,6 +35,7 @@ class Network:
     """
 
     def __init__(self):
+        self._core = None
         self._network = None
         self._exec_network = None
         self._input_blob_name = None
@@ -45,17 +46,25 @@ class Network:
         model_xml = model
         model_bin = os.path.splitext(model_xml)[0] + ".bin"
 
-        core = IECore()
+        self._core = IECore()
 
         ### Add any necessary extensions ###
         if cpu_extension and "CPU" in device:
-            core.add_extension(cpu_extension, device)
+            self._core.add_extension(cpu_extension, device)
+        
+        self._network = IENetwork(model=model_xml, weights=model_bin)
 
         ### Check for supported layers ###
-        ### TODO: Return the loaded inference plugin ###
-        self._network = IENetwork(model=model_xml, weights=model_bin)
+        unsupported = self.check_unsupported_layers(self._network, device)
+        if len(unsupported) != 0:
+            print("There are unsupported layers in the current model.\n"
+                  "Try to load a CPU extension to solve this problem.\n"
+                  "Layer types: " + str(unsupported) + "\n"
+                  "Cannot continue. Exiting.", file=sys.stderr)
+            exit(1)
+
         try:
-            self._exec_network = core.load_network(self._network, device)
+            self._exec_network = self._core.load_network(self._network, device)
         except Exception as e:
             if "unsupported layer" in str(e):
                 # OpenVINO throws a RuntimeException on unsupported layer,
@@ -95,3 +104,18 @@ class Network:
         ### TODO: Extract and return the output results
         ### Note: You may need to update the function parameters. ###
         return self._exec_network.requests[request_id].outputs[self._output_blob]
+
+    def check_unsupported_layers(self, net, device):
+        """
+        Checks for unsupported layers on selected device.
+        Returns a set of unsupported layers (empty if there are none)
+        """
+        supported_layers = self._core.query_network(network=net, device_name=device)
+
+        unsupported = set()
+        for layer, obj in net.layers.items():
+            if not layer in supported_layers and obj.type != 'Input':
+                log.debug(f"Unsupported layer: {layer}, Type: {obj.type}")
+                unsupported.add(obj.type)
+
+        return unsupported
