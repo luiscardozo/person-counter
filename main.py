@@ -43,6 +43,8 @@ MQTT_KEEPALIVE_INTERVAL = 60
 ################# TODO: separte variables in .env file?
 USE_MQTT=False  # To be able to test without MQTT
 DEFAULT_CONFIDENCE=0.5
+DEFAULT_LOGFILE="logs/infer_and_publish.log"
+DEFAULT_LOGLEVEL="DEBUG"
 
 DEFAULT_DEVICE="MYRIAD" #CPU
 if DEFAULT_DEVICE == "CPU":
@@ -108,6 +110,10 @@ def build_argparser():
                         help="Shows a Window with the processed output of the image or video")
     parser.add_argument("-k", "--skip_frames", type=int, default=0,
                         help="Skip # of frames on the start of the video.")
+    parser.add_argument("-L", "--logfile", type=str, default=DEFAULT_LOGFILE,
+                        help="Path to the file to write the log")
+    parser.add_argument("-ll", "--loglevel", type=str, default=DEFAULT_LOGLEVEL,
+                        help="Level of verbosity log")
     parser.add_argument("--dev", required=False, action="store_true",
                         help="Set options to ease the development.\n"
                         "Same as using -x -s -k 58 -q")
@@ -366,6 +372,8 @@ def sanitize_input(args):
         args.show_window = True
         args.skip_frames = 58
         args.disable_mqtt = True
+
+    log.basicConfig(filename=args.logfile, level=args.loglevel)
 
 def main():
     """
