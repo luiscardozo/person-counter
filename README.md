@@ -200,3 +200,46 @@ CAMERA_FEED_SERVER: "http://localhost:3004"
 ...
 MQTT_SERVER: "ws://localhost:3002"
 ```
+
+# My changes
+
+## Model
+
+Name: ssd_mobilenet_v2_coco_2018_03_29
+Link: http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz
+
+## Conversion
+This is a synopsis of what I used to convert the model from TensorFlow to OpenVINO IR. The full script is in `model_conversion.sh`.
+
+Script:
+
+```
+source /opt/intel/openvino/bin/setupvars.sh
+MO_DIR=/opt/intel/openvino/deployment_tools/model_optimizer
+MO=$MO_DIR/mo.py
+
+MODEL_TYPE=ssd_v2
+
+# go where the files frozen_inference_graph.pb and pipeline.config are
+MODEL_DIR='/path/to/model'
+cd $MODEL_DIR 
+
+# create the IR
+# Model Optimizer
+$MO --input_model frozen_inference_graph.pb \
+	--tensorflow_object_detection_api_pipeline_config pipeline.config \
+	--reverse_input_channels --tensorflow_use_custom_operations_config \
+	/opt/intel/openvino/deployment_tools/model_optimizer/extensions/front/tf/${MODEL_TYPE}_support.json
+```
+
+
+Output:
+```
+# ... some information about parameters and version ...
+
+[ SUCCESS ] Generated IR model.
+[ SUCCESS ] XML file: /home/luis/src/ai/nd131-openvino-fundamentals-project-starter/tmp/ssd_mobilenet_v2_coco_2018_03_29/./frozen_inference_graph.xml
+[ SUCCESS ] BIN file: /home/luis/src/ai/nd131-openvino-fundamentals-project-starter/tmp/ssd_mobilenet_v2_coco_2018_03_29/./frozen_inference_graph.bin
+[ SUCCESS ] Total execution time: 42.04 seconds. 
+```
+
