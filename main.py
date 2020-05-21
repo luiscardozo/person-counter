@@ -96,7 +96,7 @@ def build_argparser():
     parser.add_argument("-pt", "--prob_threshold", type=float, default=0.5,
                         help="Probability threshold for detections filtering"
                         "(0.5 by default)")
-    parser.add_argument("-o", "--disable_video_output", type=bool, default=True, #False,
+    parser.add_argument("-x", "--disable_video_output", type=bool, default=False,
                         help="Disable the output of key video frames to stdout\n"
                             "If enabled, you need to pipe the output of this script to ffmpeg\n"
                             f"e.g.: python3 {__file__} | ffmpeg -v warning -f rawvideo -pixel_format bgr24 -video_size 1280x720 -framerate 24 -i - http://0.0.0.0:3004/fac.ffm")
