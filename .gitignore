@@ -5,3 +5,4 @@ out.mp4
 out/
 old/
 tmp/
+package-lock.json
