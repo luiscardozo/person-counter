@@ -191,16 +191,17 @@ def infer_on_stream(args, mqtt_client):
 
     v_width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     v_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) #OpenCV 3+
-    print(f"Total frames: {total_frames}")
+    print(f"Total frames: {total_frames}. FPS: {fps}")
 
     if args.isImage:
         out = None
     else:
         print("Creating VideoWriter")
         fourCC = cv2.VideoWriter_fourcc(*'mp4v') #try with: 'MJPG', 'XVID', 'MP4V'
-        out = cv2.VideoWriter(args.output_video, fourCC, 30, (v_width, v_height))
+        out = cv2.VideoWriter(args.output_video, fourCC, fps, (v_width, v_height))
 
     ### Loop until stream is over ###
     frame_nr=0
