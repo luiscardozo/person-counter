@@ -102,7 +102,7 @@ def build_argparser():
                         help="Disable the output of key video frames to stdout\n"
                             "If enabled, you need to pipe the output of this script to ffmpeg\n"
                             f"e.g.: python3 {__file__} | ffmpeg -v warning -f rawvideo -pixel_format bgr24 -video_size 1280x720 -framerate 24 -i - http://0.0.0.0:3004/fac.ffm")
-    parser.add_argument("-q", "--disable_mqtt", type=bool, default=False,
+    parser.add_argument("-q", "--disable_mqtt", required=False, action="store_true",
                         help="Disable the connection to MQTT server (for example, to test the inference only)")
     parser.add_argument("-s", "--show_window", required=False, action="store_true",
                         help="Shows a Window with the processed output of the image or video")
@@ -117,7 +117,12 @@ def build_argparser():
 def connect_mqtt():
     if USE_MQTT:
         client = mqtt.Client()
-        client.connect(MQTT_HOST, MQTT_PORT, MQTT_KEEPALIVE_INTERVAL)
+        try:
+            client.connect(MQTT_HOST, MQTT_PORT, MQTT_KEEPALIVE_INTERVAL)
+        except ConnectionRefusedError as err:
+            print(f"Could not connect to MQTT server at {MQTT_HOST}:{MQTT_PORT}.", file=sys.stderr)
+            print("Is the server up?", file=sys.stderr)
+            exit(1)
         return client
 
 def disconnect_mqtt(client):
@@ -356,6 +361,8 @@ def main():
 
     :return: None
     """
+    global USE_MQTT
+
     # Grab command line args
     args = build_argparser().parse_args()
     sanitize_input(args)
