@@ -104,7 +104,7 @@ def build_argparser():
                             f"e.g.: python3 {__file__} | ffmpeg -v warning -f rawvideo -pixel_format bgr24 -video_size 1280x720 -framerate 24 -i - http://0.0.0.0:3004/fac.ffm")
     parser.add_argument("-q", "--disable_mqtt", type=bool, default=False,
                         help="Disable the connection to MQTT server (for example, to test the inference only)")
-    parser.add_argument("-s", "--show_window", type=bool, default=True,
+    parser.add_argument("-s", "--show_window", required=False, action="store_true",
                         help="Shows a Window with the processed output of the image or video")
     parser.add_argument("-k", "--skip_frames", type=int, default=0,
                         help="Skip # of frames on the start of the video.")
