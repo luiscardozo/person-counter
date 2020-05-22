@@ -5,7 +5,7 @@ const FFMPG_PORT = 3004;
 export const SETTINGS = {
   CAMERA_FEED_SERVER: "http://" + WS_HOST + ':' + FFMPG_PORT,
   CAMERA_FEED_WIDTH: 852,
-  MAX_POINTS: 10,
+  MAX_POINTS: 100,
   SLICE_LENGTH: -10,
 };
 
