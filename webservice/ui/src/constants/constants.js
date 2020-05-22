@@ -1,8 +1,9 @@
 const WS_HOST = 'localhost';
 const MQTT_PORT = 3002;
+const FFMPG_PORT = 3004;
 
 export const SETTINGS = {
-  CAMERA_FEED_SERVER: "http://" + WS_HOST,
+  CAMERA_FEED_SERVER: "http://" + WS_HOST + ':' + FFMPG_PORT,
   CAMERA_FEED_WIDTH: 852,
   MAX_POINTS: 10,
   SLICE_LENGTH: -10,
