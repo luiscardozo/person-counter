@@ -12,23 +12,28 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 LOGDIR=$SCRIPT_DIR/logs
 mkdir -p $LOGDIR
 
-# run the Mosca Server
+echo "Running Mosca Server..."
 cd $SCRIPT_DIR/webservice/server/node-server/
 exec node server.js > $LOGDIR/mosca.log 2> $LOGDIR/mosca_err.log &
+sleep 2
 
-# run the UI server
-cd $SCRIPT_DIR/webservice/server/ui/
-exec npm run dev > $LOGDIR/ui.log 2> $$LOGDIR/ui_err.log &
+echo "Running the UI server..."
+cd $SCRIPT_DIR/webservice/ui/
+exec npm run dev > $LOGDIR/ui.log 2> $LOGDIR/ui_err.log &
+sleep 2
 
-# run the FFMPEG server
+echo "Running the FFMPEG server..."
 cd $SCRIPT_DIR/ffmpeg
-$FFSERVER -f server.conf
+exec $FFSERVER -f server.conf > $LOGDIR/ffserver.log 2> $LOGDIR/ffserver_err.log &
+sleep 2
 
-# run the python script
+# open the UI in a browser
+echo "Opening the browser..."
+xdg-open http://localhost:3000
+
+echo "... and running the python script"
+cd $SCRIPT_DIR
 source env/bin/activate
 
 VIDEO_SIZE=768x432
 python3 main.py | $FFMPEG -v warning -f rawvideo -pixel_format bgr24 -video_size $VIDEO_SIZE -framerate 24 -i - http://0.0.0.0:3004/fac.ffm
-
-# open the UI in a browser
-xdg-open http://localhost:3000
