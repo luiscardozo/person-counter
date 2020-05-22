@@ -100,6 +100,8 @@ def build_argparser():
                         "(0.5 by default)")
     parser.add_argument("-o", "--output_video", type=str, default="out.mp4",
                         help="Name of the output video")
+    parser.add_argument("-f", "--disable_video_file", required=False, action="store_true",
+                        help="Disable the output video file creation")
     parser.add_argument("-x", "--disable_video_output", required=False, action="store_true",
                         help="Disable the output of key video frames to stdout\n"
                             "If enabled, you need to pipe the output of this script to ffmpeg\n"
@@ -264,11 +266,12 @@ def infer_on_stream(args, mqtt_client):
     v_width, v_height, fps, total_frames = get_video_info(cap)
     
     if args.isImage:
-        out = None
+        out_video_writer = None
     else:
-        log.debug("Creating VideoWriter")
-        fourCC = cv2.VideoWriter_fourcc(*'mp4v') #try with: 'MJPG', 'XVID', 'MP4V'
-        out = cv2.VideoWriter(args.output_video, fourCC, fps, (v_width, v_height))
+        if not args.disable_video_file:
+            log.debug("Creating VideoWriter")
+            fourCC = cv2.VideoWriter_fourcc(*'mp4v') #try with: 'MJPG', 'XVID', 'MP4V'
+            out_video_writer = cv2.VideoWriter(args.output_video, fourCC, fps, (v_width, v_height))
 
     ### Loop until stream is over ###
     frame_nr=0
@@ -349,7 +352,8 @@ def infer_on_stream(args, mqtt_client):
         if args.isImage:
             cv2.imwrite('output_image.jpg', out_frame)
         else:
-            out.write(out_frame)
+            if not args.disable_video_file:
+                out_video_writer.write(out_frame)
 
         if args.show_window:
             cv2.imshow('display', out_frame)
@@ -362,7 +366,8 @@ def infer_on_stream(args, mqtt_client):
             args.skip_frames = frame_nr + 20
 
     if not args.isImage:
-        out.release()
+        if not args.disable_video_file:
+            out_video_writer.release()
 
     cap.release()
     cv2.destroyAllWindows()
