@@ -12,7 +12,7 @@ if [ ! -z ${UI_PID} ]; then
     kill -INT $UI_PID
 fi
 
-FF_PID=`ps aux | grep 'ffserver' | grep -v grep | awk '{print $2}'`
+FF_PID=`ps aux | grep 'ffserver' | grep -v grep | grep -v rawvideo | awk '{print $2}'`
 if [ ! -z ${FF_PID} ]; then
     echo "Closing FFMPEG"
     kill -INT $FF_PID
