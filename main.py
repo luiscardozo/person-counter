@@ -73,7 +73,7 @@ DEFAULT_MODEL=f"./models/intel/person-detection-retail-0013/FP{DEFAULT_PREC}/per
 #DEFAULT_MODEL="tmp/caffe/vggnet/VGG_VOC0712Plus_SSD_300x300_iter_240000.xml" # really slow; label = 15.0
 
 DEFAULT_INPUT='resources/Pedestrian_Detect_2_1_1.mp4'
-
+isImage = False
 
 def build_argparser():
     """
@@ -266,7 +266,7 @@ def infer_on_stream(args, mqtt_client):
 
     v_width, v_height, fps, total_frames = get_video_info(cap)
     
-    if args.isImage:
+    if isImage:
         out_video_writer = None
     else:
         if not args.disable_video_file:
@@ -350,7 +350,7 @@ def infer_on_stream(args, mqtt_client):
             sys.stdout.flush()
 
         ### Write an output image if `single_image_mode` ###
-        if args.isImage:
+        if isImage:
             cv2.imwrite('output_image.jpg', out_frame)
         else:
             if not args.disable_video_file:
@@ -359,14 +359,14 @@ def infer_on_stream(args, mqtt_client):
         if args.show_window:
             cv2.imshow('display', out_frame)
 
-        key_pressed = cv2.waitKey(30)
-        if key_pressed == 27 or key_pressed == 113: #Esc or q
-            break #exit the while cap.isOpened() loop
+            key_pressed = cv2.waitKey(3000 if isImage else 30)
+            if key_pressed == 27 or key_pressed == 113: #Esc or q
+                break #exit the while cap.isOpened() loop
 
-        if key_pressed == 32: #if space: advance 20 frames
-            args.skip_frames = frame_nr + 20
+            if key_pressed == 32: #if space: advance 20 frames
+                args.skip_frames = frame_nr + 20
 
-    if not args.isImage:
+    if not isImage:
         if not args.disable_video_file:
             out_video_writer.release()
 
@@ -378,26 +378,47 @@ def get_youtube_video_url(url):
     best = videoPafy.getbest() #preftype="webm")
     return best.url
 
+def check_video_or_pic(args):
+    """
+    Check if input file is a supported image or movie.
+    If not, notify the user and abort the program.
+    """
+    # based on https://docs.opencv.org/2.4/modules/highgui/doc/reading_and_writing_images_and_video.html
+    pics = ["jpg", "jpeg", "png", "gif", "bmp", "jpe", "jp2", "tiff", "tif"]
+    movs = ["avi", "mpg", "mp4", "mkv", "ogv"]
+
+    ext = os.path.splitext(args.input)[1][1:]
+    if ext in pics:
+        isImage = True
+    elif ext in movs:
+        isImage = False
+    else:
+        print("Input file format not supported", file=sys.stderr)
+        exit(1)
+    
+    return isImage
+
+
 def sanitize_input(args):
-    args.isImage = False
+    global isImage
     
     if args.input == "CAM" or args.input == "0":
         args.input = 0 #the webcam
     else:
         if args.input.startswith('https://www.youtube.com'):
             args.input = get_youtube_video_url(args.input)
+        elif args.input.startswith('rtsp://'):
+            pass #accept rtsp
         else:
-            if not args.input.startswith('rtsp://'):
-                args.input = os.path.abspath(args.input)
-
-        if args.input.endswith('.jpg') or args.input.endswith('.bmp'):
-            args.isImage = True
+            isImage = check_video_or_pic(args) # exits if invalid file type
+            args.input = os.path.abspath(args.input)
 
     if args.dev:
         args.disable_video_output = True
         args.show_window = True
-        args.skip_frames = 58
         args.disable_mqtt = True
+        if args.input == DEFAULT_INPUT:
+            args.skip_frames = 58
 
     log.basicConfig(filename=args.logfile, level=args.loglevel)
 
