@@ -7,3 +7,4 @@ old/
 tmp/
 package-lock.json
 fac.ffm
+logs/
