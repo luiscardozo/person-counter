@@ -386,6 +386,13 @@ def sanitize_input(args):
 
     log.basicConfig(filename=args.logfile, level=args.loglevel)
 
+def print_init(args):
+    """
+    Logs a message to indicate a new run.
+    """
+    log.info("\n######################")
+    log.info(f"Model: {args.model}, input: {args.input}.")
+
 def main():
     """
     Load the network and parse the output.
@@ -397,6 +404,8 @@ def main():
     # Grab command line args
     args = build_argparser().parse_args()
     sanitize_input(args)
+
+    print_init(args)
 
     # Connect to the MQTT server
     USE_MQTT = not args.disable_mqtt
