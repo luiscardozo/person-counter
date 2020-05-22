@@ -378,7 +378,8 @@ def sanitize_input(args):
     if args.input == "CAM" or args.input == "0":
         args.input = 0 #the webcam
     else:
-        args.input = os.path.abspath(args.input)
+        if not args.input.startswith('rtsp://'):
+            args.input = os.path.abspath(args.input)
 
         if args.input.endswith('.jpg') or args.input.endswith('.bmp'):
             args.isImage = True
