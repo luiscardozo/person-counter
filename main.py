@@ -229,6 +229,15 @@ def get_video_info(cap):
     
     return (width, height, fps, total_frames)
 
+def calc_duration(duration_start, duration_end):
+    """
+    Calculates the duration of one person in the frame
+    """
+    if duration_end > duration_start and duration_end > 0 and duration_start > 0:
+        duration = duration_end - duration_start
+    else:
+        duration = 0
+    return duration
 
 def infer_on_stream(args, mqtt_client):
     """
@@ -316,7 +325,8 @@ def infer_on_stream(args, mqtt_client):
 
             person_stats = {'count': nr_people_on_frame, 'total': total_people_counted}
 
-            duration = duration_end - duration_start if duration_start != 0 else 0
+            duration = calc_duration(duration_start, duration_end)
+
             log.debug(f"frame: {frame_nr} ###### count: {nr_people_on_frame}, total: {total_people_counted}, duration: {duration}")
             
             out_frame = draw_stats(out_frame, nr_people_on_frame, total_people_counted, duration, frame_nr)
@@ -327,7 +337,8 @@ def infer_on_stream(args, mqtt_client):
             ### Topic "person/duration": key of "duration" ###
             if USE_MQTT:
                 mqtt_client.publish("person", json.dumps(person_stats))
-                mqtt_client.publish("person/duration", json.dumps({'duration':duration}))
+                if duration != 0:
+                    mqtt_client.publish("person/duration", json.dumps({'duration':duration}))
 
         ### Send the frame to the FFMPEG server ###
         if not args.disable_video_output:
