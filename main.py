@@ -30,6 +30,7 @@ import cv2
 
 import logging as log
 import paho.mqtt.client as mqtt
+import pafy
 
 from argparse import ArgumentParser
 from inference import Network
@@ -372,14 +373,22 @@ def infer_on_stream(args, mqtt_client):
     cap.release()
     cv2.destroyAllWindows()
 
+def get_youtube_video_url(url):
+    videoPafy = pafy.new(url)
+    best = videoPafy.getbest() #preftype="webm")
+    return best.url
+
 def sanitize_input(args):
     args.isImage = False
     
     if args.input == "CAM" or args.input == "0":
         args.input = 0 #the webcam
     else:
-        if not args.input.startswith('rtsp://'):
-            args.input = os.path.abspath(args.input)
+        if args.input.startswith('https://www.youtube.com'):
+            args.input = get_youtube_video_url(args.input)
+        else:
+            if not args.input.startswith('rtsp://'):
+                args.input = os.path.abspath(args.input)
 
         if args.input.endswith('.jpg') or args.input.endswith('.bmp'):
             args.isImage = True

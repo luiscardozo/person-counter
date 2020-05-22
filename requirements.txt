@@ -2,3 +2,5 @@ paho-mqtt
 opencv-python
 #openvino debe instalarse aparte
 networkx #for some operations of model optimizer
+pafy
+youtube_dl
