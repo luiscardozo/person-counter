@@ -368,15 +368,15 @@ def infer_on_stream(args, mqtt_client):
     cv2.destroyAllWindows()
 
 def sanitize_input(args):
+    args.isImage = False
+    
     if args.input == "CAM" or args.input == "0":
         args.input = 0 #the webcam
     else:
         args.input = os.path.abspath(args.input)
 
-    if args.input.endswith('.jpg') or args.input.endswith('.bmp'):
-        args.isImage = True
-    else:
-        args.isImage = False
+        if args.input.endswith('.jpg') or args.input.endswith('.bmp'):
+            args.isImage = True
 
     if args.dev:
         args.disable_video_output = True
