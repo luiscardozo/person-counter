@@ -427,7 +427,7 @@ def sanitize_input(args):
         args.disable_video_output = True
         args.show_window = True
         args.disable_mqtt = True
-        if args.input == DEFAULT_INPUT:
+        if args.input == os.path.abspath(DEFAULT_INPUT) and args.skip_frames == 0:
             args.skip_frames = 58
 
     log.basicConfig(filename=args.logfile, level=args.loglevel)
