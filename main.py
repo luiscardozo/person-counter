@@ -262,11 +262,13 @@ def infer_on_stream(args, mqtt_client):
     # --> it's in args.prob_threshold
 
     ### Load the model through `infer_network` ###
+    log.debug("Loading model")
     network = infer_network.load_model(args.model, args.device, args.cpu_extension)
     net_input_shape = infer_network.get_input_shape()
     required_size = (net_input_shape[3], net_input_shape[2])
 
     ### Handle the input stream ###
+    log.debug("Opening video")
     cap = open_video(args.input)
 
     v_width, v_height, fps, total_frames = get_video_info(cap)
