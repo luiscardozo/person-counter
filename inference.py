@@ -38,8 +38,10 @@ class Network:
         self._core = None
         self._network = None
         self._exec_network = None
-        self._input_blob_name = None
-        self._output_blob_name = None
+        self._input_blob = None
+        self._output_blob = None
+        self._img_info_input_blob = None
+        self._feed_dict = {}
 
     def load_model(self, model, device, cpu_extension=None):
         ### Load the model ###
@@ -75,17 +77,39 @@ class Network:
                 print(e, file=sys.stderr)
             exit(1)
         
-        self._input_blob = next(iter(self._network.inputs))
+        #self._input_blob = next(iter(self._network.inputs)) #does not work with Faster RCNN (2 inputs)
+        self._handle_inputs()
+                
+        assert len(self._network.outputs) == 1, "Demo supports only single output topologies"
         self._output_blob = next(iter(self._network.outputs))
         ### Note: You may need to update the function parameters. ###
         return self._exec_network   ########hay que ver si no es un "leak" de implementación
+
+    def _handle_inputs(self):
+        #code copied from object_detection_demo_ssd_async.py.
+        # Before this, Faster RCNN did not work because it have 2 inputs
+        for blob_name in self._network.inputs:
+            if len(self._network.inputs[blob_name].shape) == 4:
+                self._input_blob = blob_name
+            elif len(self._network.inputs[blob_name].shape) == 2:
+                self._img_info_input_blob = blob_name
+            else:
+                raise RuntimeError("Unsupported {}D input layer '{}'. Only 2D and 4D input layers are supported"
+                                .format(len(self._network.inputs[blob_name].shape), blob_name))
+
+        #
+        n, c, h, w = self._network.inputs[self._input_blob].shape
+        if self._img_info_input_blob:
+            self._feed_dict[self._img_info_input_blob] = [h, w, 1]
+
 
     def get_input_shape(self):
         return self._network.inputs[self._input_blob].shape
 
     def exec_net(self, image, request_id=0):  #### #Renombrar a async_inference?
         ### TODO: Start an asynchronous request ###
-        self._exec_network.start_async(request_id=request_id, inputs={self._input_blob: image})
+        self._feed_dict[self._input_blob] = image
+        self._exec_network.start_async(request_id=request_id, inputs=self._feed_dict) # inputs={self._input_blob: image})
         ## ???
         # Implement exec_net() by setting a self.infer_request_handle variable
         # to an instance of self.net_plugin.start_async
