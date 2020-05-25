@@ -77,6 +77,7 @@ DEFAULT_MODEL="tmp/faster_rcnn_resnet101_coco_2018_01_28_fp32/frozen_inference_g
 #DEFAULT_MODEL="tmp/faster_rcnn_resnet101_coco_2018_01_28/frozen_inference_graph.xml" # slow
 
 DEFAULT_INPUT='resources/Pedestrian_Detect_2_1_1.mp4'
+isCOCO = False
 isImage = False
 
 def build_argparser():
@@ -162,8 +163,8 @@ def draw_masks(result, frame, v_width, v_height, prob_threshold):
     
     for box in result[0][0]: # Output shape is 1x1x200x7
         label = box[1]
-        #if label != 1:  # Person Class in COCO
-        #    continue
+        if isCOCO and label != 1:  # Person Class in COCO
+            continue
 
         confidence = box[2]
         if confidence >= prob_threshold:
@@ -405,6 +406,9 @@ def check_video_or_pic(args):
 
 def sanitize_input(args):
     global isImage
+    global isCOCO
+
+    isCOCO = "coco" in args.model
     
     if args.input == "CAM" or args.input == "0":
         args.input = 0 #the webcam
