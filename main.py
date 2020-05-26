@@ -159,7 +159,7 @@ def draw_masks(result, frame, v_width, v_height, prob_threshold):
             valid_boxes.append(box)
     return frame, nr_people_on_frame, valid_boxes
 
-def draw_stats(frame, nr_people, total_people, duration, frame_nr):
+def draw_stats(frame, nr_people, total_people, duration, frame_nr, v_height):
     '''
     Draw statistics onto the frame.
     '''
@@ -184,8 +184,11 @@ def draw_stats(frame, nr_people, total_people, duration, frame_nr):
     putText(f"Duration: {duration:.2f}s")
     putText(f"Total: {total_people}")
 
+    y = v_height - 50
+    color = (255, 255, 255)
     putText(f"Model: {model['name']}")
-    putText(f"Total time: {time.perf_counter() - ini_time}")
+    putText(f"Origin: {model['origin']}")
+    putText(f"Total time: {time.perf_counter() - ini_time:.2f}")
     
     return frame
 
@@ -324,7 +327,7 @@ def infer_on_stream(args, mqtt_client):
 
             log.debug(f"frame: {frame_nr} ###### count: {nr_people_on_frame}, total: {total_people_counted}, duration: {duration}")
             
-            out_frame = draw_stats(out_frame, nr_people_on_frame, total_people_counted, duration, frame_nr)
+            out_frame = draw_stats(out_frame, nr_people_on_frame, total_people_counted, duration, frame_nr, v_height)
 
             ### Calculate and send relevant information on ###
             ### current_count, total_count and duration to the MQTT server ###
