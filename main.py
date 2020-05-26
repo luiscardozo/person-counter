@@ -59,6 +59,7 @@ isCOCO = False
 isImage = False
 
 model = Model().get_default()
+ini_time = time.perf_counter()
 
 def build_argparser():
     """
@@ -184,6 +185,7 @@ def draw_stats(frame, nr_people, total_people, duration, frame_nr):
     putText(f"Total: {total_people}")
 
     putText(f"Model: {model['name']}")
+    putText(f"Total time: {time.perf_counter() - ini_time}")
     
     return frame
 
