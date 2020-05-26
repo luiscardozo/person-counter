@@ -27,6 +27,7 @@ import time
 import socket
 import json
 import cv2
+from datetime import datetime as dt
 
 import logging as log
 import paho.mqtt.client as mqtt
@@ -106,6 +107,9 @@ def build_argparser():
     parser.add_argument("--dev", required=False, action="store_true",
                         help="Set options to ease the development.\n"
                         "Same as using -x -s -k 58 -q")
+    parser.add_argument("-a", "--all_models", required=False, action="store_true",
+                        help="Run all the models in sequence, saving an output video for everyone\n"
+                            "For testing and comparation purposes. Implies --dev")
     return parser
 
 
@@ -392,6 +396,22 @@ def check_video_or_pic(args):
     
     return isImage
 
+def loop_all_models(args):
+    global model
+    global ini_time
+
+    models = Model()
+    for m in models:
+        if not m['enabled']:
+            continue
+
+        model = m
+        args.model = model['path']
+        args.output_video = f"out/{model['name']}-{dt.now().strftime('%Y%m%d_%H%M%S')}.mp4"
+        print_init(args)
+        ini_time = time.perf_counter()
+        infer_on_stream(args, None)
+
 
 def sanitize_input(args):
     global isImage
@@ -409,6 +429,9 @@ def sanitize_input(args):
         else:
             isImage = check_video_or_pic(args) # exits if invalid file type
             args.input = os.path.abspath(args.input)
+
+    if args.all_models:
+        args.dev = True
 
     if args.dev:
         args.disable_video_output = True
@@ -438,14 +461,17 @@ def main():
     args = build_argparser().parse_args()
     sanitize_input(args)
 
-    print_init(args)
+    if args.all_models:
+        loop_all_models(args)
+    else:
+        print_init(args)
 
-    # Connect to the MQTT server
-    USE_MQTT = not args.disable_mqtt
-    mqtt_client = connect_mqtt()
-    # Perform inference on the input stream
-    infer_on_stream(args, mqtt_client)
-    disconnect_mqtt(mqtt_client)
+        # Connect to the MQTT server
+        USE_MQTT = not args.disable_mqtt
+        mqtt_client = connect_mqtt()
+        # Perform inference on the input stream
+        infer_on_stream(args, mqtt_client)
+        disconnect_mqtt(mqtt_client)
 
 
 if __name__ == '__main__':
