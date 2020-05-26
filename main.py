@@ -58,7 +58,7 @@ DEFAULT_INPUT='resources/Pedestrian_Detect_2_1_1.mp4'
 isCOCO = False
 isImage = False
 
-model = Model()
+model = Model().get_default()
 
 def build_argparser():
     """
@@ -67,7 +67,7 @@ def build_argparser():
     :return: command line arguments
     """
     parser = ArgumentParser()
-    parser.add_argument("-m", "--model", required=False, type=str, default=model.get_default_model_path(), 
+    parser.add_argument("-m", "--model", required=False, type=str, default=model['path'],
                         help="Path to an xml file with a trained model.")
     parser.add_argument("-i", "--input", required=False, type=str, default=DEFAULT_INPUT,
                         help="Path to image or video file")
@@ -182,6 +182,8 @@ def draw_stats(frame, nr_people, total_people, duration, frame_nr):
     putText(f"In Frame: {nr_people}")
     putText(f"Duration: {duration:.2f}s")
     putText(f"Total: {total_people}")
+
+    putText(f"Model: {model['name']}")
     
     return frame
 
