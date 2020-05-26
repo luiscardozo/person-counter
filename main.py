@@ -34,6 +34,7 @@ import pafy
 
 from argparse import ArgumentParser
 from inference import Network
+from models import Model
 
 # MQTT server environment variables
 HOSTNAME = socket.gethostname()
@@ -53,32 +54,11 @@ if DEFAULT_DEVICE == "CPU":
 else:
     DEFAULT_PREC=16
 
-#DEFAULT_MODEL=f"./models/intel/person-detection-retail-0013/FP{DEFAULT_PREC}/person-detection-retail-0013.xml"
-#DEFAULT_MODEL="./tmp/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.xml" # Lot of errors, do not detect the 2nd person
-#DEFAULT_MODEL="./tmp/faster_rcnn_resnet50_coco_2018_01_28/frozen_inference_graph.xml" # Somewhat slow
-#DEFAULT_MODEL="./tmp/faster_rcnn_resnet101_ava_v2.1_2018_04_30/frozen_inference_graph.xml" # slow, sometimes does not detect
-#DEFAULT_MODEL="./tmp/onnx-mobilenetv2-1.0/mobilenetv2-1.0.xml" # only for classification
-#DEFAULT_MODEL="tmp/faster_rcnn_resnet101_kitti_2018_01_28/frozen_inference_graph.xml" # slow, sometimes does not detect
-#DEFAULT_MODEL="tmp/ssd_inception_v2_coco_2018_01_28/frozen_inference_graph.xml" # sometimes does not detect
-
-#DEFAULT_MODEL="tmp/faster_rcnn_inception_v2_coco_2018_01_28/frozen_inference_graph.xml" # Somewhat slow
-
-#https://github.com/zlingkang/mobilenet_ssd_pedestrian_detection
-#DEFAULT_MODEL="tmp/mobilenet_ssd_pedestrian_detection/MobileNetSSD_deploy10695.xml" # nothing detected
-
-#https://github.com/onnx/models/tree/master/vision/object_detection_segmentation/ssd
-#DEFAULT_MODEL="tmp/onnx/ssd-10.xml" #unsupported layers 'NonMaxSuppression' VPU
-
-#https://github.com/weiliu89/caffe/tree/ssd
-#https://drive.google.com/file/d/0BzKzrI_SkD1_WnR2T1BGVWlCZHM/view
-#DEFAULT_MODEL="tmp/caffe/vggnet/VGG_VOC0712Plus_SSD_300x300_iter_240000.xml" # slow; label = 15.0
-
-DEFAULT_MODEL="tmp/faster_rcnn_resnet101_coco_2018_01_28_fp32/frozen_inference_graph.xml" # slow
-#DEFAULT_MODEL="tmp/faster_rcnn_resnet101_coco_2018_01_28/frozen_inference_graph.xml" # slow
-
 DEFAULT_INPUT='resources/Pedestrian_Detect_2_1_1.mp4'
 isCOCO = False
 isImage = False
+
+model = Model()
 
 def build_argparser():
     """
@@ -87,7 +67,7 @@ def build_argparser():
     :return: command line arguments
     """
     parser = ArgumentParser()
-    parser.add_argument("-m", "--model", required=False, type=str, default=DEFAULT_MODEL, 
+    parser.add_argument("-m", "--model", required=False, type=str, default=model.get_default_model_path(), 
                         help="Path to an xml file with a trained model.")
     parser.add_argument("-i", "--input", required=False, type=str, default=DEFAULT_INPUT,
                         help="Path to image or video file")
