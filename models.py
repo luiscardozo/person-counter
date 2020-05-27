@@ -51,7 +51,7 @@ class Model():
                 'enabled': True
             },
             {
-                'name': '',
+                'name': 'faster_rcnn_inception_v2_coco',
                 'path': 'tmp/faster_rcnn_inception_v2_coco_2018_01_28/frozen_inference_graph.xml',
                 'person-class': 1.0,
                 'origin': 'tensorflow',
@@ -112,7 +112,7 @@ class Model():
         return model['person-class'] if model else None
 
     def get_default(self):
-        return self.get_model('person-detection-retail-0013')
+        return self.get_model('ssd_mobilenet_v2_coco') #'person-detection-retail-0013')
 
     def get_default_model_path(self):
         return self.get_default()['path']
