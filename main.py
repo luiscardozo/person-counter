@@ -56,7 +56,6 @@ else:
     DEFAULT_PREC=16
 
 DEFAULT_INPUT='resources/Pedestrian_Detect_2_1_1.mp4'
-isCOCO = False
 isImage = False
 
 model = Model().get_default()
@@ -148,7 +147,7 @@ def draw_masks(result, frame, v_width, v_height, prob_threshold):
     
     for box in result[0][0]: # Output shape is 1x1x200x7
         label = box[1]
-        if isCOCO and label != 1:  # Person Class in COCO
+        if label != model['person-class']:  # We are only interested in Person/Pedestrian/etc class.
             continue
 
         confidence = box[2]
@@ -415,9 +414,6 @@ def loop_all_models(args):
 
 def sanitize_input(args):
     global isImage
-    global isCOCO
-
-    isCOCO = "coco" in args.model
     
     if args.input == "CAM" or args.input == "0":
         args.input = 0 #the webcam
