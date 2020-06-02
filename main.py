@@ -132,7 +132,6 @@ def draw_masks(result, frame, v_width, v_height, prob_threshold):
     Draw bounding boxes onto the frame.
     '''
     nr_people_on_frame = 0
-    valid_boxes = []
     
     def check_boundary(x, y, maxX=v_width):
         newX = x
@@ -159,8 +158,7 @@ def draw_masks(result, frame, v_width, v_height, prob_threshold):
             cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (255, 0, 0), 2)
             cv2.putText(frame, f"{confidence:.4f}",check_boundary(xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255,0,0), thickness=2)
             nr_people_on_frame += 1
-            valid_boxes.append(box)
-    return frame, nr_people_on_frame, valid_boxes
+    return frame, nr_people_on_frame
 
 def draw_stats(frame, nr_people, total_people, duration, frame_nr, v_height):
     '''
@@ -304,7 +302,7 @@ def infer_on_stream(args, mqtt_client):
             result = infer_network.get_output() #[1,1,200,7]
 
             ### Extract any desired stats from the results ###
-            out_frame, nr_people_on_frame, valid_boxes = draw_masks(result, raw_frame, v_width, v_height, args.prob_threshold)
+            out_frame, nr_people_on_frame = draw_masks(result, raw_frame, v_width, v_height, args.prob_threshold)
 
             #if nr_people_on_frame is equal, update the duration (needs to be per-person)
             #else, there is someone new or someone less
