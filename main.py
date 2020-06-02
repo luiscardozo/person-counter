@@ -57,6 +57,7 @@ else:
 
 DEFAULT_INPUT='resources/Pedestrian_Detect_2_1_1.mp4'
 isImage = False
+allow_print = False #if --dev: print() else log.debug()
 
 model = Model().get_default()
 ini_time = time.perf_counter()
@@ -235,6 +236,18 @@ def calc_duration(duration_start, duration_end):
         duration = 0
     return duration
 
+def avg(lst):
+    suma = 0
+    for val in lst:
+        suma += val
+    return suma / len(lst)
+
+def print_debug(msg, level=log.DEBUG):
+    if allow_print:
+        print(msg)
+    else:
+        log.log(level, msg)
+
 def infer_on_stream(args, mqtt_client):
     """
     Initialize the inference network, stream video to network,
@@ -276,8 +289,14 @@ def infer_on_stream(args, mqtt_client):
     duration = 0
     duration_start = 0
     duration_end = 0
-    duration_avg = 0
+    
+    vid_duration = 0
+    vid_duration_start = 0
+    vid_duration_end = 0
+    vid_duration_avg = 0
+
     people = {} #{'person_id': 'duration'}
+    vid_people = {} #{'person_id': 'vid_duration'}
 
     while cap.isOpened:
         frame_nr += 1
@@ -315,14 +334,17 @@ def infer_on_stream(args, mqtt_client):
             if previous_nr_people_on_frame == nr_people_on_frame:
                 if duration_start != 0:
                     duration_end = time.perf_counter()  #calculate the total time of the person until this frame
+                    vid_duration_end = int(cap.get(cv2.CAP_PROP_POS_MSEC))
             else:
                 if previous_nr_people_on_frame < nr_people_on_frame:
                     #new people on frame
                     total_people_counted += nr_people_on_frame - previous_nr_people_on_frame
                     duration_start = time.perf_counter()
+                    vid_duration_start = int(cap.get(cv2.CAP_PROP_POS_MSEC))
                 else:
                     #less people on frame
                     duration_end = time.perf_counter()
+                    vid_duration_end = int(cap.get(cv2.CAP_PROP_POS_MSEC))
                     duration_start = 0
                     exited = True
                     if duration < 1:
@@ -337,17 +359,20 @@ def infer_on_stream(args, mqtt_client):
             if exited:
                 if duration > 1:
                     people[total_people_counted] = duration
-                log.debug("###################################################")
-                log.debug(people)
-                log.debug("###################################################")
-                log.debug("avg duration: ")
-                suma = 0
-                for dur in people.values():
-                    suma += dur
-                avg_duration = suma / len(people)
-                log.debug(avg_duration)
+                    vid_people[total_people_counted] = vid_duration
+                print_debug("###################################################")
+                print_debug(people)
+                print_debug("###################################################")
+                print_debug("avg duration: ")
+                avg_duration = avg(people.values())
+                print_debug(avg_duration)
+
+                vid_duration_avg = avg(vid_people.values())
+                print_debug("avg vid_duration: ")
+                print_debug(vid_duration_avg)
 
             duration = calc_duration(duration_start, duration_end)
+            vid_duration = calc_duration(vid_duration_start, vid_duration_end)
             ##################################################################################
             ### End Calculation of nr of people and duration
             ##################################################################################
@@ -438,6 +463,7 @@ def loop_all_models(args):
 
 def sanitize_input(args):
     global isImage
+    global allow_print
     
     if args.input == "CAM" or args.input == "0":
         args.input = 0 #the webcam
@@ -459,6 +485,9 @@ def sanitize_input(args):
         args.disable_mqtt = True
         if args.input == os.path.abspath(DEFAULT_INPUT) and args.skip_frames == 0:
             args.skip_frames = 58
+
+    if args.disable_video_output:
+        allow_print = True
 
     log.basicConfig(filename=args.logfile, level=args.loglevel)
 
