@@ -108,5 +108,4 @@ $CMD
 # and
 # https://docs.openvinotoolkit.org/latest/_docs_MO_DG_prepare_model_customize_model_optimizer_TensorFlow_Faster_RCNN_ObjectDetection_API.html
 
-# input_blob = 'image_info'
-# 'image_tensor'
+# mxnet: $MO --input_model faster_rcnn_resnet50_v1b_voc-0000.params
