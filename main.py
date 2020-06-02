@@ -276,6 +276,8 @@ def infer_on_stream(args, mqtt_client):
     duration = 0
     duration_start = 0
     duration_end = 0
+    duration_avg = 0
+    people = {} #{'person_id': 'duration'}
 
     while cap.isOpened:
         frame_nr += 1
@@ -309,6 +311,7 @@ def infer_on_stream(args, mqtt_client):
             ##################################################################################
             #if nr_people_on_frame is equal, update the duration (needs to be per-person)
             #else, there is someone new or someone less
+            exited = False
             if previous_nr_people_on_frame == nr_people_on_frame:
                 if duration_start != 0:
                     duration_end = time.perf_counter()  #calculate the total time of the person until this frame
@@ -321,6 +324,7 @@ def infer_on_stream(args, mqtt_client):
                     #less people on frame
                     duration_end = time.perf_counter()
                     duration_start = 0
+                    exited = True
                     if duration < 1:
                         total_people_counted -= previous_nr_people_on_frame
                         duration_end += duration
@@ -328,6 +332,20 @@ def infer_on_stream(args, mqtt_client):
             previous_nr_people_on_frame = nr_people_on_frame
 
             person_stats = {'count': nr_people_on_frame, 'total': total_people_counted}
+
+            avg_duration = 0
+            if exited:
+                if duration > 1:
+                    people[total_people_counted] = duration
+                log.debug("###################################################")
+                log.debug(people)
+                log.debug("###################################################")
+                log.debug("avg duration: ")
+                suma = 0
+                for dur in people.values():
+                    suma += dur
+                avg_duration = suma / len(people)
+                log.debug(avg_duration)
 
             duration = calc_duration(duration_start, duration_end)
             ##################################################################################
@@ -345,7 +363,7 @@ def infer_on_stream(args, mqtt_client):
             if USE_MQTT:
                 mqtt_client.publish("person", json.dumps(person_stats))
                 if duration != 0:
-                    mqtt_client.publish("person/duration", json.dumps({'duration':duration}))
+                    mqtt_client.publish("person/duration", json.dumps({'duration': avg_duration if avg_duration != 0 else duration }))
 
         ### Send the frame to the FFMPEG server ###
         if not args.disable_video_output:
