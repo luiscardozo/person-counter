@@ -304,27 +304,35 @@ def infer_on_stream(args, mqtt_client):
             ### Extract any desired stats from the results ###
             out_frame, nr_people_on_frame = draw_masks(result, raw_frame, v_width, v_height, args.prob_threshold)
 
+            ##################################################################################
+            ### Calculation of nr of people and duration
+            ##################################################################################
             #if nr_people_on_frame is equal, update the duration (needs to be per-person)
             #else, there is someone new or someone less
             if previous_nr_people_on_frame == nr_people_on_frame:
                 if duration_start != 0:
-                    duration_end = time.perf_counter()
+                    duration_end = time.perf_counter()  #calculate the total time of the person until this frame
             else:
                 if previous_nr_people_on_frame < nr_people_on_frame:
                     #new people on frame
-                    #=== TODO: check if it was an error and reappears on next frame
                     total_people_counted += nr_people_on_frame - previous_nr_people_on_frame
                     duration_start = time.perf_counter()
                 else:
                     #less people on frame
                     duration_end = time.perf_counter()
                     duration_start = 0
+                    if duration < 1:
+                        total_people_counted -= previous_nr_people_on_frame
+                        duration_end += duration
 
             previous_nr_people_on_frame = nr_people_on_frame
 
             person_stats = {'count': nr_people_on_frame, 'total': total_people_counted}
 
             duration = calc_duration(duration_start, duration_end)
+            ##################################################################################
+            ### End Calculation of nr of people and duration
+            ##################################################################################
 
             log.debug(f"frame: {frame_nr} ###### count: {nr_people_on_frame}, total: {total_people_counted}, duration: {duration}")
             
