@@ -161,7 +161,7 @@ def draw_masks(result, frame, v_width, v_height, prob_threshold):
             nr_people_on_frame += 1
     return frame, nr_people_on_frame
 
-def draw_stats(frame, nr_people, total_people, duration, frame_nr, v_height):
+def draw_stats(frame, nr_people, total_people, duration, vid_duration, frame_nr, v_height):
     '''
     Draw statistics onto the frame.
     '''
@@ -184,6 +184,7 @@ def draw_stats(frame, nr_people, total_people, duration, frame_nr, v_height):
 
     putText(f"In Frame: {nr_people}")
     putText(f"Duration: {duration:.2f}s")
+    putText(f"Duration(Vid): {vid_duration:.2f}s")
     putText(f"Total: {total_people}")
 
     y = v_height - 50
@@ -334,17 +335,17 @@ def infer_on_stream(args, mqtt_client):
             if previous_nr_people_on_frame == nr_people_on_frame:
                 if duration_start != 0:
                     duration_end = time.perf_counter()  #calculate the total time of the person until this frame
-                    vid_duration_end = int(cap.get(cv2.CAP_PROP_POS_MSEC))
+                    vid_duration_end = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
             else:
                 if previous_nr_people_on_frame < nr_people_on_frame:
                     #new people on frame
                     total_people_counted += nr_people_on_frame - previous_nr_people_on_frame
                     duration_start = time.perf_counter()
-                    vid_duration_start = int(cap.get(cv2.CAP_PROP_POS_MSEC))
+                    vid_duration_start = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
                 else:
                     #less people on frame
                     duration_end = time.perf_counter()
-                    vid_duration_end = int(cap.get(cv2.CAP_PROP_POS_MSEC))
+                    vid_duration_end = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
                     duration_start = 0
                     exited = True
                     if duration < 1:
@@ -379,7 +380,7 @@ def infer_on_stream(args, mqtt_client):
 
             log.debug(f"frame: {frame_nr} ###### count: {nr_people_on_frame}, total: {total_people_counted}, duration: {duration}")
             
-            out_frame = draw_stats(out_frame, nr_people_on_frame, total_people_counted, duration, frame_nr, v_height)
+            out_frame = draw_stats(out_frame, nr_people_on_frame, total_people_counted, duration, vid_duration, frame_nr, v_height)
 
             ### Calculate and send relevant information on ###
             ### current_count, total_count and duration to the MQTT server ###
@@ -388,7 +389,7 @@ def infer_on_stream(args, mqtt_client):
             if USE_MQTT:
                 mqtt_client.publish("person", json.dumps(person_stats))
                 if duration != 0:
-                    mqtt_client.publish("person/duration", json.dumps({'duration': avg_duration if avg_duration != 0 else duration }))
+                    mqtt_client.publish("person/duration", json.dumps({'duration': vid_duration_avg if vid_duration_avg != 0 else vid_duration }))
 
         ### Send the frame to the FFMPEG server ###
         if not args.disable_video_output:
