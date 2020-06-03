@@ -428,7 +428,7 @@ def get_youtube_video_url(url):
     best = videoPafy.getbest() #preftype="webm")
     return best.url
 
-def check_video_or_pic(args):
+def check_video_or_pic(input):
     """
     Check if input file is a supported image or movie.
     If not, notify the user and abort the program.
@@ -437,7 +437,7 @@ def check_video_or_pic(args):
     pics = ["jpg", "jpeg", "png", "gif", "bmp", "jpe", "jp2", "tiff", "tif"]
     movs = ["avi", "mpg", "mp4", "mkv", "ogv"]
 
-    ext = os.path.splitext(args.input)[1][1:]
+    ext = os.path.splitext(input)[1][1:]
     if ext in pics:
         isImage = True
     elif ext in movs:
@@ -477,7 +477,7 @@ def sanitize_input(args):
         elif args.input.startswith('rtsp://'):
             pass #accept rtsp
         else:
-            isImage = check_video_or_pic(args) # exits if invalid file type
+            isImage = check_video_or_pic(args.input) # exits if invalid file type
             args.input = os.path.abspath(args.input)
 
     if args.all_models:

@@ -4,3 +4,4 @@ opencv-python
 networkx #for some operations of model optimizer
 pafy
 youtube_dl
+pytest
