@@ -238,6 +238,9 @@ def calc_duration(duration_start, duration_end):
     return duration
 
 def avg(lst):
+    if len(lst) == 0:
+        return 0
+    
     suma = 0
     for val in lst:
         suma += val
