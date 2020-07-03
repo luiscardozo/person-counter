@@ -318,11 +318,13 @@ def infer_on_stream(args, mqtt_client):
         frame = preprocess_frame(raw_frame, required_size)
         
         ### Start asynchronous inference for specified request ###
+        start_inference_time = time.perf_counter()
         infer_network.exec_net(frame)
 
         ### Wait for the result ###
         if infer_network.wait() == 0:
-
+            if args.dev:
+                print("Inference time: ", str(time.perf_counter() - start_inference_time))
             ### Get the results of the inference request ###
             result = infer_network.get_output() #[1,1,200,7]
 
