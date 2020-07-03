@@ -24,16 +24,39 @@ First, we need to generate the Extension Template Files using the Model Extensio
 
 I was not able to directly compare the models with and without OpenVINO in the same conditions, as I don't have a supported machine. My laptop is a 3rd Gen Intel i7, and I have a Neural Compute Stick 2 (NCS2). As the NCS2 is able to run in a Raspberry Pi, I found a way to run it in my 3rd Gen i7.
 
-########################################################
+I had a hard time trying to run the TensorFlow pretrained models, because I don't program with TensorFlow.
+After a lot of research, I found that I can use the [object_detection_tutorial.ipynb](), from the [TensorFlow Model Garden repository](https://github.com/tensorflow/models).
+I tried to extract parts of it and include here, to demonstrate my approach on how to test the performance of the models. There were so many pieces that I finally simply run it in my notebook and did not included here.
 
-My method to compare models before and after conversion to Intermediate Representations was to run the original model in the original framework, measure the performance and accuracy, then converting the model to OpenVINO IR and running on OpenVINO, and get the new numbers to compare.
+What I did was to put a time.perf_counter() before and after the run of the inference:
+```
+# Run inference
+init_time = time.perf_counter()
+output_dict = model(input_tensor)
+print("Inference time: ", str(time.perf_counter() - init_time))
+```
 
-The difference between model accuracy pre- and post-conversion was:
-* TensorFlow pretrained 
+In the original test, there were 2 images. I noticed that the first image always took a lot more time than the second one(for example: 3.3 seconds vs 0.07 seconds), so, I added 3 more images.
 
-The size of the model pre- and post-conversion was...
+My results were the following:
+* ssd_mobilenet_v2_coco:
+  - Size:
+    - Original Model Size: 67 MB (frozen_inference_graph.pb, almost the same as saved_model/saved_model.pb --that the TensorFlow used--)
+    - OpenVINO Model Size: 65 MB (frozen_inference_graph.bin) + 110K (frozen_inference_graph.xml)
+  - Time:
+    - Original (TensorFlow) Inference time: 0.077 seconds on averange.
+    - OpenVINO Inference Time: 0.069 seconds on averange (could be better: this was tested on NCS2, over USB, 1 inference request per time).
+* faster_rcnn_resnet50_coco_2018_01_28:
+    - Original Model Size: 115 MB (frozen_inference_graph.pb; 116MB saved_model/saved_model.pb)
+    - OpenVINO Model Size: 112 MB (frozen_inference_graph.bin) + 99K (frozen_inference_graph.xml)
+  - Time:
+    - Original (TensorFlow) Inference time: 3.647 seconds on averange.
+    - OpenVINO Inference Time: 2.135 seconds on averange (could be better: this was tested on NCS2, over USB, 1 inference request per time).
 
-The inference time of the model pre- and post-conversion was...
+To run the OpenVINO version, I run my code like this:
+```
+./main.py --dev -m tmp/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.xml -i /tmp/test_images/image1.jpg
+```
 
 ## Assess Model Use Cases
 
